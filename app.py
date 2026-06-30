@@ -13,6 +13,7 @@ if 'is_pro' not in st.session_state:
 @st.cache_data(ttl=3600)
 def generate_free_commercial_image(prompt: str, style: str, size: str, quality: str):
     try:
+        # Kalite çarpanları
         q_factor = {"1K (Standart)": 0.8, "2K (Yüksek)": 1.2, "4K (Ultra)": 1.8}
         factor = q_factor[quality]
         
@@ -48,12 +49,17 @@ def generate_free_commercial_image(prompt: str, style: str, size: str, quality: 
 st.set_page_config(page_title="AI Görsel Stüdyo", page_icon="⚡", layout="wide")
 
 st.sidebar.title("⚡ Hesap Bilgileri")
+
+# Pro Aktivasyon Alanı
 if not st.session_state.is_pro:
     st.sidebar.write(f"Bugünkü Kalan Hakkınız: **{st.session_state.kalan_hak}**")
-    sifre_girisi = st.sidebar.text_input("Pro Şifrenizi Girin:", type="password")
-    if sifre_girisi == "AI_PRO_2026": # Buraya kendi belirlediğin şifreyi yaz
-        st.session_state.is_pro = True
-        st.experimental_rerun()
+    pro_kod = st.sidebar.text_input("Pro Şifre:", type="password")
+    if st.sidebar.button("Pro'ya Geç"):
+        if pro_kod == "1854aaaehgx": # Belirlenen şifre
+            st.session_state.is_pro = True
+            st.rerun()
+        else:
+            st.sidebar.error("Geçersiz şifre!")
 else:
     st.sidebar.success("✅ Pro Sürüm Aktif! Sınırsız kullanım.")
 
@@ -74,7 +80,6 @@ with col2:
     if st.button("✨ Görseli Tasarla", use_container_width=True):
         if not user_prompt.strip():
             st.warning("Lütfen bir açıklama yazın!")
-        # Pro ise veya hakkı varsa üret
         elif st.session_state.is_pro or st.session_state.kalan_hak > 0:
             with st.spinner("Yapay zeka işleniyor..."):
                 img_bytes = generate_free_commercial_image(user_prompt, selected_style, selected_size, selected_quality)
@@ -90,4 +95,4 @@ with col2:
         else:
             st.error("Günlük ücretsiz hakkın bitti!")
             st.markdown("[👉 Sınırsız Erişim Satın Al](https://shopier.com/MAGAZA_LINKIN_BURAYA)")
-    
+            
