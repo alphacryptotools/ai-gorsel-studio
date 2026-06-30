@@ -7,11 +7,12 @@ import random
 if 'kalan_hak' not in st.session_state:
     st.session_state.kalan_hak = 2
 
-# --- 2. AI MOTORU (KALİTE AYARLI) ---
+# --- 2. HIZ OPTİMİZASYONLU AI MOTORU ---
+@st.cache_data(ttl=3600)
 def generate_free_commercial_image(prompt: str, style: str, size: str, quality: str):
     try:
-        # Kaliteye göre çözünürlük çarpanı
-        q_factor = {"1K (Standart)": 1, "2K (Yüksek)": 1.5, "4K (Ultra)": 2}
+        # Hız için çarpanlar optimize edildi
+        q_factor = {"1K (Standart)": 0.8, "2K (Yüksek)": 1.2, "4K (Ultra)": 1.8}
         factor = q_factor[quality]
         
         size_meta = {
@@ -34,7 +35,7 @@ def generate_free_commercial_image(prompt: str, style: str, size: str, quality: 
         url = f"https://image.pollinations.ai/p/{requests.utils.quote(final_prompt)}?width={w}&height={h}&seed={seed}&model=flux&enhance=false"
         
         headers = {'User-Agent': 'Mozilla/5.0'}
-        response = requests.get(url, headers=headers, timeout=60) # Yüksek kalite için zaman aşımını artırdık
+        response = requests.get(url, headers=headers, timeout=45) 
         
         if response.status_code == 200 and len(response.content) > 10000:
             return response.content
@@ -42,34 +43,39 @@ def generate_free_commercial_image(prompt: str, style: str, size: str, quality: 
     except:
         return None
 
-# --- 3. ARAYÜZ ---
+# --- 3. ARAYÜZ TASARIMI ---
 st.set_page_config(page_title="AI Görsel Stüdyo", page_icon="⚡", layout="wide")
 
 st.sidebar.title("⚡ Hesap Bilgileri")
 st.sidebar.write(f"Bugünkü Kalan Hakkınız: **{st.session_state.kalan_hak}**")
+st.sidebar.markdown("---")
+st.sidebar.info("Sınırsız üretim için:")
 st.sidebar.markdown("[👉 Sınırsız Erişim Satın Al](https://shopier.com/MAGAZA_LINKIN_BURAYA)")
 
 st.title("⚡ Profesyonel AI Görsel Stüdyosu")
 col1, col2 = st.columns([1, 1])
 
 with col1:
-    user_prompt = st.text_input("Görseli tarif et:")
+    user_prompt = st.text_input("Görseli tarif et:", placeholder="Örn: A futuristic city...")
     selected_size = st.selectbox("Boyut", ["Dikey Shorts (9:16)", "Yatay Video (16:9)", "Kare Post (1:1)"])
     selected_style = st.selectbox("Tarz", ["Sinematik / Fotoğraf", "3D Animasyon / Pixar", "Siberpunk / Neon", "Sihirli Fantastik"])
     selected_quality = st.select_slider("Kalite", options=["1K (Standart)", "2K (Yüksek)", "4K (Ultra)"])
 
 with col2:
-    if st.button("✨ Görseli Tasarla"):
-        if st.session_state.kalan_hak > 0:
-            with st.spinner("Yüksek kalite görsel hazırlanıyor, lütfen bekleyin..."):
+    if st.button("✨ Görseli Tasarla", use_container_width=True):
+        if not user_prompt.strip():
+            st.warning("Lütfen bir açıklama yazın!")
+        elif st.session_state.kalan_hak > 0:
+            with st.spinner("Yapay zeka işleniyor..."):
                 img_bytes = generate_free_commercial_image(user_prompt, selected_style, selected_size, selected_quality)
                 if img_bytes:
                     st.session_state.kalan_hak -= 1
                     st.success(f"Başarılı! Kalan hakkın: {st.session_state.kalan_hak}")
                     b64 = base64.b64encode(img_bytes).decode()
                     st.markdown(f'<img src="data:image/png;base64,{b64}" style="width:100%; border-radius:10px;">', unsafe_allow_html=True)
-                    st.download_button("📥 İndir", img_bytes, "ai_image.png")
+                    st.download_button("📥 İndir", img_bytes, "ai_image.png", use_container_width=True)
                 else:
-                    st.error("Bir hata oluştu (Boyut çok büyük olabilir).")
+                    st.error("Üretim sırasında hata oluştu. Lütfen tekrar deneyin.")
         else:
-            st.error("Ücretsiz hakkın bitti!")
+            st.error("Günlük ücretsiz hakkın bitti!")
+            st.markdown("[👉 Sınırsız Erişim Satın Al](https://shopier.com/MAGAZA_LINKIN_BURAYA)")
