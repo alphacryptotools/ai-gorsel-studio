@@ -6,12 +6,13 @@ import random
 # --- 1. OTURUM YÖNETİMİ ---
 if 'kalan_hak' not in st.session_state:
     st.session_state.kalan_hak = 2
+if 'is_pro' not in st.session_state:
+    st.session_state.is_pro = False
 
 # --- 2. HIZ OPTİMİZASYONLU AI MOTORU ---
 @st.cache_data(ttl=3600)
 def generate_free_commercial_image(prompt: str, style: str, size: str, quality: str):
     try:
-        # Hız için çarpanlar optimize edildi
         q_factor = {"1K (Standart)": 0.8, "2K (Yüksek)": 1.2, "4K (Ultra)": 1.8}
         factor = q_factor[quality]
         
@@ -47,7 +48,15 @@ def generate_free_commercial_image(prompt: str, style: str, size: str, quality: 
 st.set_page_config(page_title="AI Görsel Stüdyo", page_icon="⚡", layout="wide")
 
 st.sidebar.title("⚡ Hesap Bilgileri")
-st.sidebar.write(f"Bugünkü Kalan Hakkınız: **{st.session_state.kalan_hak}**")
+if not st.session_state.is_pro:
+    st.sidebar.write(f"Bugünkü Kalan Hakkınız: **{st.session_state.kalan_hak}**")
+    sifre_girisi = st.sidebar.text_input("Pro Şifrenizi Girin:", type="password")
+    if sifre_girisi == "AI_PRO_2026": # Buraya kendi belirlediğin şifreyi yaz
+        st.session_state.is_pro = True
+        st.experimental_rerun()
+else:
+    st.sidebar.success("✅ Pro Sürüm Aktif! Sınırsız kullanım.")
+
 st.sidebar.markdown("---")
 st.sidebar.info("Sınırsız üretim için:")
 st.sidebar.markdown("[👉 Sınırsız Erişim Satın Al](https://shopier.com/MAGAZA_LINKIN_BURAYA)")
@@ -65,17 +74,20 @@ with col2:
     if st.button("✨ Görseli Tasarla", use_container_width=True):
         if not user_prompt.strip():
             st.warning("Lütfen bir açıklama yazın!")
-        elif st.session_state.kalan_hak > 0:
+        # Pro ise veya hakkı varsa üret
+        elif st.session_state.is_pro or st.session_state.kalan_hak > 0:
             with st.spinner("Yapay zeka işleniyor..."):
                 img_bytes = generate_free_commercial_image(user_prompt, selected_style, selected_size, selected_quality)
                 if img_bytes:
-                    st.session_state.kalan_hak -= 1
-                    st.success(f"Başarılı! Kalan hakkın: {st.session_state.kalan_hak}")
+                    if not st.session_state.is_pro:
+                        st.session_state.kalan_hak -= 1
+                    st.success(f"Başarılı! {'Pro moddasın.' if st.session_state.is_pro else f'Kalan hakkın: {st.session_state.kalan_hak}'}")
                     b64 = base64.b64encode(img_bytes).decode()
                     st.markdown(f'<img src="data:image/png;base64,{b64}" style="width:100%; border-radius:10px;">', unsafe_allow_html=True)
                     st.download_button("📥 İndir", img_bytes, "ai_image.png", use_container_width=True)
                 else:
-                    st.error("Üretim sırasında hata oluştu. Lütfen tekrar deneyin.")
+                    st.error("Üretim sırasında hata oluştu.")
         else:
             st.error("Günlük ücretsiz hakkın bitti!")
             st.markdown("[👉 Sınırsız Erişim Satın Al](https://shopier.com/MAGAZA_LINKIN_BURAYA)")
+    
